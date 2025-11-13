@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Doctor {
+  id           String   @id @map("_id") @default(auto()) @db.ObjectId
+  name         String
+  email        String   @unique
+  password     String
+  qualification String?
+  hospital      String?
+  field         String?  
+  verified      Boolean  @default(false)
+
+  records       Record[] @relation("DoctorRecords")
+  appointments  Appointment[] @relation("DoctorAppointments")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Patient {
+  id           String   @id @map("_id") @default(auto()) @db.ObjectId
+  uniqueId     String   @unique        
+  name         String
+  email        String   @unique
+  password     String
+  dob          DateTime?
+  records      Record[] @relation("PatientRecords")
+  checkups     Appointment[] @relation("PatientAppointments")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Record {
+  id          String   @id @map("_id") @default(auto()) @db.ObjectId
+  patientId   String
+  doctorId    String
+  recordType  String            
+  data        Json                
+  attachments String?            
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  doctor  Doctor  @relation("DoctorRecords", fields: [doctorId], references: [id])
+  patient Patient @relation("PatientRecords", fields: [patientId], references: [id])
+}
+
+model Appointment {
+  id         String   @id @map("_id") @default(auto()) @db.ObjectId
+  patientId  String
+  doctorId   String
+  date       DateTime
+  receipt    String?            
+
+  doctor     Doctor  @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  patient    Patient @relation("PatientAppointments", fields: [patientId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  actorId   String              
+  action    String                  
+  targetId  String?              
+  timestamp DateTime @default(now())
+  details   Json?
+}
