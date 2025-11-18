@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DoctorNavbar } from "@/components/DoctorNavbar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -13,129 +13,124 @@ import {
   Stethoscope,
 } from "lucide-react";
 import DoctorPatientPage from "./DoctorPatientPage";
+import DoctorTreatedList from "./DoctorTreatedList";
+import axios from "axios";
+import Loader from "@/components/Loader";
 
 export default function DoctorDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [treated, setTreated] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/login");
   }, [status, router]);
 
-  if (status === "loading") {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-muted-foreground">Loading your dashboard...</p>
-      </div>
-    );
-  }
-
   const user = session?.user;
 
-  if (!user) {
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.id) return;
+      setLoading(true);
+      try {
+        const res = await axios.get(`/api/doctor/${user.id}/treated`);
+        setTreated(res.data?.records || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user?.id) load();
+  }, [user?.id]);
+
+  if (status === "loading")
     return (
-      <div className="flex h-screen items-center justify-center bg-background text-destructive">
-        <p>No user session found. Please log in again.</p>
+      <div className="flex h-screen items-center justify-center">
+        <Loader size={30} />
       </div>
     );
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Navbar */}
       <DoctorNavbar />
 
-      {/* Main Content */}
       <main className="flex-1 w-full px-4 sm:px-8 py-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-primary">
-          Welcome, Dr. {user.name?.split(" ")[0] || "Doctor"} 👨‍⚕️
+        <h1 className="text-3xl font-bold mb-6 text-primary">
+          Welcome, Dr. {user?.name?.split(" ")[0]}
         </h1>
 
-        {/* Responsive Info Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          {/* Name Card */}
-          <Card className="border border-border shadow-sm hover:shadow-md transition">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card className="border border-border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm text-muted-foreground">
                 Name
               </CardTitle>
               <User className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <p className="text-lg font-semibold">{user.name}</p>
+              <p className="text-lg font-semibold">{user?.name}</p>
             </CardContent>
           </Card>
 
-          {/* Email Card */}
-          <Card className="border border-border shadow-sm hover:shadow-md transition">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card className="border border-border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm text-muted-foreground">
                 Email
               </CardTitle>
               <Mail className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <p className="text-lg font-semibold break-all">{user.email}</p>
+              <p className="text-lg font-semibold break-all">{user?.email}</p>
             </CardContent>
           </Card>
 
-          {/* Qualification */}
-          <Card className="border border-border shadow-sm hover:shadow-md transition">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card className="border border-border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm text-muted-foreground">
                 Qualification
               </CardTitle>
               <GraduationCap className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <p className="text-lg font-semibold">
-                {user.qualification || "Not provided"}
+                {user?.qualification || "Not provided"}
               </p>
             </CardContent>
           </Card>
 
-          {/* Hospital */}
-          <Card className="border border-border shadow-sm hover:shadow-md transition">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card className="border border-border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm text-muted-foreground">
                 Hospital
               </CardTitle>
               <Building2 className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <p className="text-lg font-semibold">
-                {user.hospital || "Not provided"}
+                {user?.hospital || "Not provided"}
               </p>
             </CardContent>
           </Card>
 
-          {/* Field / Specialization */}
-          <Card className="border border-border shadow-sm hover:shadow-md transition">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Field / Specialization
+          <Card className="border border-border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm text-muted-foreground">
+                Specialization
               </CardTitle>
               <Stethoscope className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <p className="text-lg font-semibold">
-                {user.field || "Not specified"}
+                {user?.field || "Not specified"}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Patient Management Section */}
-        <section className="mt-10">
-          <DoctorPatientPage />
-        </section>
-      </main>
+        <DoctorPatientPage />
 
-      {/* Footer */}
-      <footer className="mt-auto text-center py-4 text-sm text-muted-foreground border-t border-border">
-        © {new Date().getFullYear()} MedVault · Empowering Healthcare
-        Professionals
-      </footer>
+        <DoctorTreatedList loading={loading} records={treated} />
+      </main>
     </div>
   );
 }
