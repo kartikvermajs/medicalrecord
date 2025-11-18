@@ -26,7 +26,7 @@ export default function Lightbox({ open, image, onClose }: LightboxProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4 animate-fadeIn"
+      className="fixed inset-0 z-9999 bg-black/80 flex items-center justify-center p-4 animate-fadeIn"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -35,9 +35,15 @@ export default function Lightbox({ open, image, onClose }: LightboxProps) {
         className="relative max-w-4xl w-full h-[80vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <Image src={image} alt="Fullscreen" fill className="object-contain" />
+        <Image
+          src={image}
+          alt="Fullscreen"
+          fill
+          sizes="100vw"
+          className="object-contain"
+        />
 
-        <button onClick={onClose} className="absolute top-4 right-4 text-white">
+        <button onClick={onClose} className="absolute top-0 right-1 text-white">
           <X className="h-8 w-8" />
         </button>
       </div>

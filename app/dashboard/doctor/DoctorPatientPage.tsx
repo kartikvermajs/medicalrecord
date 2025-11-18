@@ -52,11 +52,20 @@ export default function DoctorPatientPage() {
     if (!uniqueId.trim()) return;
     setConnecting(true);
 
+    console.log("🔎 Connecting patient with ID:", uniqueId);
+
     try {
       const res = await axios.get(`/api/patient/${uniqueId}`);
+      console.log("📌 Patient lookup response:", res.data);
+
       if (res.data?.patient) {
         setConnectedPatient(res.data.patient);
+        console.log("✅ Patient connected:", res.data.patient);
+      } else {
+        console.log("❌ No patient found");
       }
+    } catch (err) {
+      console.error("❌ Patient lookup failed:", err);
     } finally {
       setConnecting(false);
     }
@@ -67,6 +76,9 @@ export default function DoctorPatientPage() {
     if (!file) return;
 
     setUploading(true);
+
+    console.log("📤 Uploading image:", file.name);
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append(
@@ -79,27 +91,73 @@ export default function DoctorPatientPage() {
         `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
         formData
       );
+
+      console.log("☁️ Cloudinary upload success:", res.data.secure_url);
+
       setImages((prev) => [...prev, res.data.secure_url]);
+    } catch (err) {
+      console.error("❌ Cloudinary upload failed:", err);
     } finally {
       setUploading(false);
     }
   };
 
   const saveRecord = async () => {
-    if (!subject.trim() || images.length === 0 || !connectedPatient) return;
+    console.log("💾 Saving record...");
+
+    if (!subject.trim() || !connectedPatient) {
+      console.log("⚠️ Missing subject or patient — aborting save");
+      return;
+    }
+
+    console.log("📦 Record payload:", {
+      subject,
+      images,
+      patient: connectedPatient.uniqueId,
+      doctorId: session?.user?.id,
+    });
 
     setSaving(true);
 
+    let analysis = null;
+
     try {
-      await axios.post("/api/patient/update", {
+      if (images.length > 0) {
+        console.log("🧠 Sending first image to AI:", images[0]);
+
+        const aiRes = await axios.post("/api/ai/analyze-image", {
+          imageUrl: images[0],
+          subject,
+        });
+
+        console.log("🤖 AI analysis response:", aiRes.data);
+
+        analysis = aiRes.data?.analysis || null;
+      } else {
+        console.log("ℹ️ No images uploaded — skipping AI analysis");
+      }
+    } catch (err) {
+      console.error("❌ AI analysis failed:", err);
+    }
+
+    try {
+      console.log("📩 Sending final save request to backend...");
+
+      const saveRes = await axios.post("/api/patient/update", {
         uniqueId: connectedPatient.uniqueId,
         subject,
         images,
         doctorId: session?.user?.id,
+        analysis,
       });
+
+      console.log("✅ Record saved:", saveRes.data);
 
       setSubject("");
       setImages([]);
+    } catch (err) {
+      console.error("❌ Saving record failed:", err);
+      alert("Saving failed — check console for errors.");
     } finally {
       setSaving(false);
     }
@@ -156,7 +214,7 @@ export default function DoctorPatientPage() {
 
                 <div className="relative border-2 border-dashed p-4 rounded-lg text-muted-foreground flex flex-col items-center justify-center">
                   <FileImage className="h-6 w-6 mb-2" />
-                  <p className="text-sm">Upload a checkup image</p>
+                  <p className="text-sm">Upload a checkup image (optional)</p>
 
                   <Input
                     type="file"
@@ -178,6 +236,7 @@ export default function DoctorPatientPage() {
                         src={url}
                         alt="Uploaded"
                         fill
+                        sizes="(max-width: 768px) 100vw, 300px"
                         className="object-cover"
                       />
                     </div>

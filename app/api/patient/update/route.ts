@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
  */
 export async function POST(req: Request) {
   try {
-    const { uniqueId, subject, images, doctorId } = await req.json();
+    const { uniqueId, subject, images, doctorId, analysis } = await req.json();
 
     // ✅ Validate input
     if (!uniqueId || !subject || !images?.length || !doctorId) {
@@ -36,7 +36,11 @@ export async function POST(req: Request) {
         patientId: patient.id,
         doctorId,
         recordType: subject,
-        data: { subject, images },
+        data: {
+          subject,
+          images,
+          analysis: analysis || null,
+        },
         attachments: JSON.stringify(images),
       },
     });

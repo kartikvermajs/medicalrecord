@@ -9,6 +9,8 @@ import { Mail, Hash, User } from "lucide-react";
 import axios from "axios";
 import Loader from "@/components/Loader";
 import CheckupDetails, { CheckupRecord } from "./CheckupDetails";
+import ChatFab from "@/components/ChatFab";
+import Lightbox from "@/components/Lightbox";
 
 export default function PatientDashboard() {
   const { data: session, status } = useSession();
@@ -99,6 +101,8 @@ export default function PatientDashboard() {
 
         <CheckupDetails loading={loading} records={records} />
       </main>
+
+      <ChatFab />
     </div>
   );
 }

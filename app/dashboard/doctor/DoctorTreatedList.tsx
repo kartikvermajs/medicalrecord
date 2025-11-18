@@ -88,6 +88,7 @@ export default function DoctorTreatedList({ loading, records }: Props) {
                           src={img}
                           alt="Record Image"
                           fill
+                          sizes="(max-width: 768px) 100vw, 300px"
                           className="object-cover"
                         />
 
