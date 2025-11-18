@@ -12,7 +12,7 @@ import {
   Building2,
   Stethoscope,
 } from "lucide-react";
-import DoctorPatientPage from "./patient";
+import DoctorPatientPage from "./DoctorPatientPage";
 
 export default function DoctorDashboard() {
   const { data: session, status } = useSession();

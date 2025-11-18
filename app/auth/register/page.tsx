@@ -14,8 +14,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
 import {
   Select,
   SelectContent,
@@ -23,21 +25,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// ✅ Updated Schema with DOB, Age, Gender
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Loader from "@/components/Loader";
+
 const formSchema = z.object({
-  role: z.enum(["doctor", "patient"]).refine((v) => !!v, {
+  role: z.string().refine((v) => v === "doctor" || v === "patient", {
     message: "Please select a role",
   }),
+
   name: z.string().min(1, "Name is required"),
+
   email: z.string().min(1, "Email is required").email("Enter a valid email"),
+
   password: z
     .string()
     .min(1, "Password is required")
     .min(6, "Password must be at least 6 characters"),
+
   gender: z.string().min(1, "Please select gender"),
+
   dob: z.string().min(1, "Date of Birth is required"),
+
   age: z.number().optional(),
 
   qualification: z.string().optional(),
@@ -48,7 +57,7 @@ const formSchema = z.object({
 type RegisterData = z.infer<typeof formSchema>;
 
 export default function RegisterPage() {
-  const [msg, setMsg] = useState<string>("");
+  const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
   const form = useForm<RegisterData>({
@@ -61,35 +70,45 @@ export default function RegisterPage() {
       gender: "",
       dob: "",
       age: undefined,
+      qualification: "",
+      hospital: "",
+      field: "",
     },
   });
 
   const role = form.watch("role");
   const dob = form.watch("dob");
 
-  // 🧮 Auto-calculate age when DOB changes
+  // AGE CALCULATION
   useEffect(() => {
     if (!dob) return;
-    const birthDate = new Date(dob);
+
+    const birth = new Date(dob);
     const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
     if (
       monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      (monthDiff === 0 && today.getDate() < birth.getDate())
     ) {
       age--;
     }
+
     if (age >= 0 && form.getValues("age") !== age) {
       form.setValue("age", age);
     }
   }, [dob, form]);
 
+  // SUBMIT HANDLER
   const onSubmit = async (data: RegisterData) => {
     setMsg("");
     setLoading(true);
 
     try {
+      console.log("🔍 Sending Register Payload:", data);
+
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,9 +116,13 @@ export default function RegisterPage() {
       });
 
       const json = await res.json();
+
+      console.log("🔍 Server Response:", json);
+
       setMsg(json.error || json.message || "Unknown response");
     } catch (err) {
-      setMsg("Something went wrong. Please try again.");
+      console.error("⚠️ Registration Error:", err);
+      setMsg("Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -107,7 +130,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 relative">
-      {/* 🔆 Theme toggle in top-right */}
       <div className="absolute top-6 right-6">
         <ThemeToggle />
       </div>
@@ -126,7 +148,7 @@ export default function RegisterPage() {
               className="space-y-5"
               noValidate
             >
-              {/* Role */}
+              {/* ROLE */}
               <FormField
                 control={form.control}
                 name="role"
@@ -134,8 +156,8 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Role</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
+                      onValueChange={(v) => field.onChange(v)}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -152,33 +174,33 @@ export default function RegisterPage() {
                 )}
               />
 
-              {/* Name */}
+              {/* NAME */}
               <FormField
-                control={form.control}
                 name="name"
+                control={form.control}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input {...field} placeholder="John Doe" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Email */}
+              {/* EMAIL */}
               <FormField
-                control={form.control}
                 name="email"
+                control={form.control}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="you@example.com"
                         {...field}
+                        placeholder="you@example.com"
                       />
                     </FormControl>
                     <FormMessage />
@@ -186,18 +208,18 @@ export default function RegisterPage() {
                 )}
               />
 
-              {/* Password */}
+              {/* PASSWORD */}
               <FormField
-                control={form.control}
                 name="password"
+                control={form.control}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="••••••••"
                         {...field}
+                        placeholder="••••••••"
                       />
                     </FormControl>
                     <FormMessage />
@@ -205,17 +227,14 @@ export default function RegisterPage() {
                 )}
               />
 
-              {/* Gender */}
+              {/* GENDER */}
               <FormField
-                control={form.control}
                 name="gender"
+                control={form.control}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select gender" />
@@ -232,102 +251,100 @@ export default function RegisterPage() {
                 )}
               />
 
-              {/* DOB and Auto Age */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+              {/* DOB + AGE */}
+              <div className="flex flex-col sm:flex-row sm:gap-4">
                 <FormField
-                  control={form.control}
                   name="dob"
+                  control={form.control}
                   render={({ field }) => (
                     <FormItem className="flex-1">
                       <FormLabel>Date of Birth</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="age"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>Age</FormLabel>
-                      <FormControl>
                         <Input
-                          type="number"
-                          placeholder="Auto-filled"
-                          readOnly
+                          type="date"
                           value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value)}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  name="age"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormLabel>Age</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          readOnly
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              {/* Doctor-specific fields */}
+              {/* DOCTOR FIELDS */}
               {role === "doctor" && (
                 <>
                   <FormField
-                    control={form.control}
                     name="qualification"
+                    control={form.control}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Qualification</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. MBBS, MD" {...field} />
+                          <Input {...field} placeholder="MBBS, MD…" />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
 
                   <FormField
-                    control={form.control}
                     name="hospital"
+                    control={form.control}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Hospital</FormLabel>
                         <FormControl>
-                          <Input placeholder="Hospital Name" {...field} />
+                          <Input {...field} placeholder="Hospital Name" />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
 
                   <FormField
-                    control={form.control}
                     name="field"
+                    control={form.control}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Specialization</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Cardiology, Neurology..."
                             {...field}
+                            placeholder="Cardiology, Neurology…"
                           />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
                 </>
               )}
 
-              {/* Submit Button */}
               <Button
-                type="submit"
                 disabled={loading}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition"
+                type="submit"
+                className="w-full flex items-center justify-center gap-2"
               >
-                {loading ? "Registering..." : "Register"}
+                {loading && <Loader size={18} thickness={2} />}
+                {loading ? "Submitting..." : "Register"}
               </Button>
 
-              {/* Response message */}
               {msg && (
                 <p
                   className={`text-sm text-center ${

@@ -13,6 +13,7 @@ model Doctor {
   email        String   @unique
   password     String
   age           Int?
+  dob           DateTime?
   gender        String?
   qualification String?
   hospital      String?
@@ -44,8 +45,8 @@ model Patient {
 
 model Record {
   id          String   @id @map("_id") @default(auto()) @db.ObjectId
-  patientId   String
-  doctorId    String
+  patientId   String   @db.ObjectId
+  doctorId    String   @db.ObjectId
   recordType  String            
   data        Json                
   attachments String?            

@@ -26,19 +26,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import Loader from "@/components/Loader";
 
-// ✅ Version-safe schema for all Zod releases
 const formSchema = z.object({
-  role: z.enum(["doctor", "patient"]).refine((v) => !!v, {
-    message: "Please select a role",
-  }),
-
-  email: z.string().min(1, "Email is required").email("Enter a valid email"),
-
-  password: z
-    .string()
-    .min(1, "Password is required")
-    .min(6, "Password must be at least 6 characters"),
+  role: z.enum(["doctor", "patient"]),
+  email: z.string().min(1).email(),
+  password: z.string().min(6),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -46,6 +39,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -58,10 +52,14 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setError("");
+    setLoading(true);
+
     const res = await signIn("credentials", {
       ...data,
       redirect: false,
     });
+
+    setLoading(false);
 
     if (res?.error) {
       setError(res.error);
@@ -72,7 +70,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 relative">
-      {/* 🔆 Theme Toggle in top-right corner */}
       <div className="absolute top-6 right-6">
         <ThemeToggle />
       </div>
@@ -91,7 +88,6 @@ export default function LoginPage() {
               className="space-y-5"
               noValidate
             >
-              {/* Role Selection */}
               <FormField
                 control={form.control}
                 name="role"
@@ -117,7 +113,6 @@ export default function LoginPage() {
                 )}
               />
 
-              {/* Email */}
               <FormField
                 control={form.control}
                 name="email"
@@ -136,7 +131,6 @@ export default function LoginPage() {
                 )}
               />
 
-              {/* Password */}
               <FormField
                 control={form.control}
                 name="password"
@@ -155,12 +149,16 @@ export default function LoginPage() {
                 )}
               />
 
-              {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition flex items-center justify-center gap-2"
+                disabled={loading}
               >
-                Login
+                {loading ? (
+                  <Loader size={20} thickness={2} speed={500} />
+                ) : (
+                  "Login"
+                )}
               </Button>
 
               {error && (

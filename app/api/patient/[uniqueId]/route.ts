@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/**
- * 🧠 GET /api/patient/[uniqueId]
- * Fetch patient details using their unique ID.
- */
 export async function GET(
   _req: Request,
   { params }: { params: { uniqueId: string } }
 ) {
   try {
-    const { uniqueId } = params;
+    const { uniqueId } = await params;
 
     // ✅ Find patient by their uniqueId
     const patient = await prisma.patient.findUnique({
@@ -60,7 +56,7 @@ export async function POST(
   { params }: { params: { uniqueId: string } }
 ) {
   try {
-    const { uniqueId } = params;
+    const { uniqueId } = await params;
     const body = await req.json();
     const { subject, images, doctorId } = body;
 

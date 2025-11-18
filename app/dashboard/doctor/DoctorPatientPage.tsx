@@ -3,13 +3,14 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Loader2, Upload, UserPlus, FileImage } from "lucide-react";
+import { Upload, UserPlus, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import axios from "axios";
+import Loader from "@/components/Loader";
 
 interface Patient {
   id: string;
@@ -24,15 +25,16 @@ export default function DoctorPatientPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [connecting, setConnecting] = useState(false);
   const [uniqueId, setUniqueId] = useState("");
   const [connectedPatient, setConnectedPatient] = useState<Patient | null>(
     null
   );
-  const [loading, setLoading] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+
   const [subject, setSubject] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/login");
@@ -41,31 +43,20 @@ export default function DoctorPatientPage() {
   if (status === "loading") {
     return (
       <div className="flex h-screen items-center justify-center bg-background text-foreground">
-        <Loader2 className="animate-spin h-6 w-6 text-primary mr-2" />
-        <p>Loading dashboard...</p>
+        <Loader size={30} />
       </div>
     );
   }
 
-  const handleConnect = async () => {
-    if (!uniqueId.trim()) {
-      alert("Please enter a valid unique ID");
-      return;
-    }
-
+  const connectPatient = async () => {
+    if (!uniqueId.trim()) return;
     setConnecting(true);
+
     try {
-      const res = await axios.get<{ patient: Patient | null }>(
-        `/api/patient/${uniqueId}`
-      );
+      const res = await axios.get(`/api/patient/${uniqueId}`);
       if (res.data?.patient) {
         setConnectedPatient(res.data.patient);
-      } else {
-        alert("No patient found with that ID.");
       }
-    } catch (error) {
-      console.error(error);
-      alert("Failed to connect to patient.");
     } finally {
       setConnecting(false);
     }
@@ -84,49 +75,41 @@ export default function DoctorPatientPage() {
     );
 
     try {
-      const res = await axios.post<{ secure_url: string }>(
+      const res = await axios.post(
         `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
         formData
       );
       setImages((prev) => [...prev, res.data.secure_url]);
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed. Check Cloudinary config.");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!subject.trim() || images.length === 0) {
-      alert("Please fill in all fields.");
-      return;
-    }
+  const saveRecord = async () => {
+    if (!subject.trim() || images.length === 0 || !connectedPatient) return;
 
-    setLoading(true);
+    setSaving(true);
+
     try {
       await axios.post("/api/patient/update", {
-        uniqueId,
+        uniqueId: connectedPatient.uniqueId,
         subject,
         images,
         doctorId: session?.user?.id,
       });
-      alert("Details saved successfully!");
+
       setSubject("");
       setImages([]);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to save patient details.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <main className="flex-1 p-4 sm:p-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6 ml-[-20] text-primary">
-          Patient Management 🩺
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-primary">
+          Patient Management
         </h1>
 
         {!connectedPatient ? (
@@ -137,25 +120,20 @@ export default function DoctorPatientPage() {
                 Connect with a Patient
               </CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <Input
                 placeholder="Enter Patient Unique ID"
                 value={uniqueId}
                 onChange={(e) => setUniqueId(e.target.value)}
               />
+
               <Button
-                onClick={handleConnect}
+                onClick={connectPatient}
                 disabled={connecting}
-                className="w-full"
+                className="w-full flex items-center justify-center gap-2"
               >
-                {connecting ? (
-                  <>
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                    Connecting...
-                  </>
-                ) : (
-                  "Connect Patient"
-                )}
+                {connecting ? <Loader size={20} /> : "Connect Patient"}
               </Button>
             </CardContent>
           </Card>
@@ -163,12 +141,12 @@ export default function DoctorPatientPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5 text-primary" />
+                <CardTitle>
                   Connected to {connectedPatient.name} (
                   {connectedPatient.uniqueId})
                 </CardTitle>
               </CardHeader>
+
               <CardContent className="space-y-4">
                 <Textarea
                   placeholder="Enter checkup subject..."
@@ -176,11 +154,10 @@ export default function DoctorPatientPage() {
                   onChange={(e) => setSubject(e.target.value)}
                 />
 
-                <div className="relative border-2 border-dashed p-4 rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary transition">
+                <div className="relative border-2 border-dashed p-4 rounded-lg text-muted-foreground flex flex-col items-center justify-center">
                   <FileImage className="h-6 w-6 mb-2" />
-                  <p className="text-sm">
-                    Drag & drop or click to upload checkup image
-                  </p>
+                  <p className="text-sm">Upload a checkup image</p>
+
                   <Input
                     type="file"
                     accept="image/*"
@@ -189,12 +166,7 @@ export default function DoctorPatientPage() {
                   />
                 </div>
 
-                {uploading && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="animate-spin h-4 w-4" />
-                    Uploading...
-                  </div>
-                )}
+                {uploading && <Loader size={22} />}
 
                 <div className="flex flex-wrap gap-3">
                   {images.map((url) => (
@@ -213,20 +185,16 @@ export default function DoctorPatientPage() {
                 </div>
 
                 <Button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="w-full mt-4"
+                  onClick={saveRecord}
+                  disabled={saving}
+                  className="w-full flex items-center justify-center gap-2"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                      Saving...
-                    </>
+                  {saving ? (
+                    <Loader size={20} />
                   ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" /> Save Checkup
-                    </>
+                    <Upload className="h-4 w-4" />
                   )}
+                  {saving ? "Saving..." : "Save Checkup"}
                 </Button>
               </CardContent>
             </Card>
