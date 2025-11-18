@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// 🧩 Schema definition with version-safe validation
+// ✅ Updated Schema with DOB, Age, Gender
 const formSchema = z.object({
   role: z.enum(["doctor", "patient"]).refine((v) => !!v, {
     message: "Please select a role",
@@ -36,6 +36,10 @@ const formSchema = z.object({
     .string()
     .min(1, "Password is required")
     .min(6, "Password must be at least 6 characters"),
+  gender: z.string().min(1, "Please select gender"),
+  dob: z.string().min(1, "Date of Birth is required"),
+  age: z.number().optional(),
+
   qualification: z.string().optional(),
   hospital: z.string().optional(),
   field: z.string().optional(),
@@ -54,8 +58,32 @@ export default function RegisterPage() {
       name: "",
       email: "",
       password: "",
+      gender: "",
+      dob: "",
+      age: undefined,
     },
   });
+
+  const role = form.watch("role");
+  const dob = form.watch("dob");
+
+  // 🧮 Auto-calculate age when DOB changes
+  useEffect(() => {
+    if (!dob) return;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    if (age >= 0 && form.getValues("age") !== age) {
+      form.setValue("age", age);
+    }
+  }, [dob, form]);
 
   const onSubmit = async (data: RegisterData) => {
     setMsg("");
@@ -76,8 +104,6 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
-
-  const role = form.watch("role");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 relative">
@@ -178,6 +204,69 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+
+              {/* Gender */}
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* DOB and Auto Age */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                <FormField
+                  control={form.control}
+                  name="dob"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormLabel>Date of Birth</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="age"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormLabel>Age</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Auto-filled"
+                          readOnly
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Doctor-specific fields */}
               {role === "doctor" && (

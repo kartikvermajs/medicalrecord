@@ -12,6 +12,8 @@ model Doctor {
   name         String
   email        String   @unique
   password     String
+  age           Int?
+  gender        String?
   qualification String?
   hospital      String?
   field         String?  
@@ -31,6 +33,8 @@ model Patient {
   email        String   @unique
   password     String
   dob          DateTime?
+  age           Int?
+  gender        String?
   records      Record[] @relation("PatientRecords")
   checkups     Appointment[] @relation("PatientAppointments")
 

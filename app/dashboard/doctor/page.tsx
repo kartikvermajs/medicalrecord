@@ -12,6 +12,7 @@ import {
   Building2,
   Stethoscope,
 } from "lucide-react";
+import DoctorPatientPage from "./patient";
 
 export default function DoctorDashboard() {
   const { data: session, status } = useSession();
@@ -51,7 +52,7 @@ export default function DoctorDashboard() {
         </h1>
 
         {/* Responsive Info Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {/* Name Card */}
           <Card className="border border-border shadow-sm hover:shadow-md transition">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -124,15 +125,9 @@ export default function DoctorDashboard() {
           </Card>
         </div>
 
-        {/* Future section */}
+        {/* Patient Management Section */}
         <section className="mt-10">
-          <h2 className="text-xl font-semibold mb-3 text-foreground">
-            Upcoming Feature: Patient Management Dashboard 🧠
-          </h2>
-          <p className="text-muted-foreground">
-            Soon you’ll be able to view, update, and upload patient records
-            directly from this dashboard, powered by our AI-assisted analytics.
-          </p>
+          <DoctorPatientPage />
         </section>
       </main>
 
