@@ -11,7 +11,7 @@ export default function Home() {
 
       <div className="max-w-2xl space-y-6">
         <h1 className="text-4xl font-bold text-foreground">
-          Welcome to MedVault
+          Welcome to CuraVault
         </h1>
         <p className="text-lg text-muted-foreground">
           Your lifetime medical record system — secure, cloud-based, and powered
@@ -36,7 +36,7 @@ export default function Home() {
       </div>
 
       <footer className="mt-20 text-sm text-muted-foreground">
-        © {new Date().getFullYear()} MedVault · Secure Medical Record System
+        © {new Date().getFullYear()} CuraVault · Secure Medical Record System
       </footer>
     </main>
   );

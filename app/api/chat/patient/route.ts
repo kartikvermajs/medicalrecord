@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         {
           role: "system",
           content: `
-You are MedVault AI — a medical assistant for patients.
+You are CuraVault AI — a medical assistant for patients.
 
 You must answer based ONLY on:
 • patient's checkup records

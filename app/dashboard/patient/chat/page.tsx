@@ -20,7 +20,7 @@ export default function PatientChatPage() {
     try {
       const raw =
         typeof window !== "undefined"
-          ? sessionStorage.getItem("medvault_chat")
+          ? sessionStorage.getItem("CuraVault_chat")
           : null;
       return raw ? JSON.parse(raw) : [];
     } catch {
@@ -42,7 +42,7 @@ export default function PatientChatPage() {
     }
 
     try {
-      sessionStorage.setItem("medvault_chat", JSON.stringify(messages));
+      sessionStorage.setItem("CuraVault_chat", JSON.stringify(messages));
     } catch {}
   }, [messages]);
 
@@ -97,7 +97,7 @@ export default function PatientChatPage() {
 
   function clearChat() {
     setMessages([]);
-    sessionStorage.removeItem("medvault_chat");
+    sessionStorage.removeItem("CuraVault_chat");
   }
 
   return (
@@ -116,7 +116,7 @@ export default function PatientChatPage() {
           </div>
           <div>
             <h1 className="text-lg font-semibold leading-none">
-              MedVault AI Assistant
+              CuraVault AI Assistant
             </h1>
             <p className="text-xs text-muted-foreground">Always here to help</p>
           </div>

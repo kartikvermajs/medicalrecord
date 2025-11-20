@@ -28,7 +28,7 @@ export function UserNavbar() {
     <nav className="w-full border-b border-border bg-background text-foreground shadow-sm">
       <div className="flex items-center justify-between px-4 sm:px-8 py-3">
         {/* Brand */}
-        <h1 className="text-xl font-bold text-primary">MedVault</h1>
+        <h1 className="text-xl font-bold text-primary">CuraVault</h1>
 
         {/* Desktop Controls */}
         <div className="hidden sm:flex items-center gap-4">

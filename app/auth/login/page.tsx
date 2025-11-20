@@ -77,7 +77,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-md border border-border">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center text-foreground">
-            Login to MedVault
+            Login to CuraVault
           </CardTitle>
         </CardHeader>
 

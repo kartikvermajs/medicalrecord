@@ -137,7 +137,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md shadow-md border border-border">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center text-foreground">
-            Register at MedVault
+            Register at CuraVault
           </CardTitle>
         </CardHeader>
 

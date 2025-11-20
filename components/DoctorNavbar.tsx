@@ -37,7 +37,7 @@ export function DoctorNavbar() {
         {/* Brand / Logo */}
         <div className="flex items-center gap-2">
           <Stethoscope className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-bold text-primary">MedVault</h1>
+          <h1 className="text-xl font-bold text-primary">CuraVault</h1>
         </div>
 
         {/* Desktop Layout */}
