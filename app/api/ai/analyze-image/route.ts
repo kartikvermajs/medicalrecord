@@ -1,21 +1,45 @@
 import { NextResponse } from "next/server";
-import client from "@/lib/ai";
+import { generateWithGemini } from "@/lib/ai";
 
 export const runtime = "nodejs";
 
+// Strict structure expected from Gemini
+interface AnalysisOutput {
+  diagnosis: string | null;
+  symptoms: string[] | null;
+  medicines: string[] | null;
+  testsRecommended: string[] | null;
+  followUpAdvice: string | null;
+  doctorNotes: string | null;
+  importantKeywords: string[] | null;
+  unclearParts: string[] | null;
+}
+
 export async function POST(req: Request) {
   try {
-    const { imageUrl, subject } = await req.json();
+    const { extractedText, subject } = await req.json();
 
-    if (!imageUrl) {
-      console.log("❌ Missing imageUrl");
-      return NextResponse.json({ error: "Missing imageUrl" }, { status: 400 });
+    console.log("📥 AI ANALYSIS REQUEST (Gemini):", {
+      subject,
+      extractedTextLength: extractedText?.length,
+    });
+
+    // Images are NOT used in Gemini (they are paid)
+    if (!extractedText || typeof extractedText !== "string") {
+      console.log("❌ Missing extractedText");
+      return NextResponse.json(
+        { error: "Missing extractedText (OCR must run first)" },
+        { status: 400 }
+      );
     }
 
-    console.log("📥 AI ANALYSIS REQUEST:", { imageUrl, subject });
-
+    // ---------------------------------------------
+    // Build Gemini prompt
+    // ---------------------------------------------
     const prompt = `
-You are a medical AI assistant. Extract structured fields from the checkup slip image:
+You are a medical AI assistant. Extract structured fields ONLY from the OCR text of a checkup slip.
+
+Return JSON ONLY, with this exact structure:
 
 {
   "diagnosis": string | null,
@@ -28,43 +52,49 @@ You are a medical AI assistant. Extract structured fields from the checkup slip 
   "unclearParts": string[] | null
 }
 
-The subject is: ${subject || "N/A"}
+If something is missing, return null or [].
+Do NOT hallucinate any medicines or diagnosis not present in OCR.
 
-Return ONLY JSON. No explanation. No markdown.
+SUBJECT:
+${subject ?? "N/A"}
+
+OCR TEXT:
+${extractedText}
+
+Return ONLY JSON. No markdown, no explanation.
 `;
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You extract structured medical data from images.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: imageUrl } },
-          ],
-        },
-      ],
-      max_tokens: 800,
-    });
+    console.log("🧠 Sending prompt to Gemini...");
 
-    let raw = response.choices[0]?.message?.content || "{}";
-    console.log("🧠 RAW AI OUTPUT:", raw);
+    // DIRECT GEMINI CALL (TEXT ONLY)
+    const rawOutput = await generateWithGemini(prompt);
 
-    // Clean codeblock formatting
-    raw = raw.replace(/```json/g, "").replace(/```/g, "");
+    console.log("🧠 RAW GEMINI OUTPUT:", rawOutput);
 
-    // Attempt JSON parse
-    let analysis = {};
+    // ---------------------------------------------
+    // Clean accidental ```json blocks
+    // ---------------------------------------------
+    const cleaned = rawOutput
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let analysis: AnalysisOutput | null = null;
+
+    // ---------------------------------------------
+    // JSON parse attempt
+    // ---------------------------------------------
     try {
-      analysis = JSON.parse(raw);
+      analysis = JSON.parse(cleaned) as AnalysisOutput;
     } catch (err) {
       console.error("❌ JSON PARSE FAILED:", err);
+
       return NextResponse.json(
-        { analysis: null, warning: "Model did not return valid JSON" },
+        {
+          analysis: null,
+          raw: cleaned,
+          warning: "Gemini returned invalid JSON",
+        },
         { status: 200 }
       );
     }
@@ -73,10 +103,10 @@ Return ONLY JSON. No explanation. No markdown.
 
     return NextResponse.json({ analysis }, { status: 200 });
   } catch (error) {
-    console.error("❌ GLOBAL AI ERROR:", error);
+    console.error("❌ GLOBAL GEMINI AI ERROR:", error);
     return NextResponse.json(
       {
-        error: "AI analysis failed",
+        error: "Gemini processing failed",
         details: String(error),
       },
       { status: 500 }
